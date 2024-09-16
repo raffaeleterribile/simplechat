@@ -64,10 +64,13 @@ class Generator:
 		super().__init__()
 		self.history = []
 
-		self.tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+		self.tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
 
 		# With torch_dtype="auto", the model will load much faster
-		self.model = AutoModelForCausalLM.from_pretrained(MODEL_ID, trust_remote_code=True, torch_dtype="auto")
+		self.model = AutoModelForCausalLM.from_pretrained(MODEL_ID,
+													# device_map="cuda",
+													torch_dtype="auto",
+													trust_remote_code=True)
 		# self.model = self.model.to('cuda:0')
 
 	def generate(self, message, history):
@@ -85,9 +88,37 @@ class Generator:
 		# 	elif message['role'] == 'assistant':
 		# 		history_transformer_format[-1][1] = '<|assistant|>\n' + message['content'] + '<|end|>\n'
 
+		""" Chat example for the "microsoft/Phi-3-mini-128k-instruct" model
+		 <|system|>
+		You are a helpful assistant.<|end|>
+		<|user|>
+		How to explain Internet for a medieval knight?<|end|>
+		<|assistant|> """
+
+		# My code for the "microsoft/Phi-3-mini-128k-instruct" model
+		# messages = "".join(["".join(["<|user|>\n"+item[0] + '<|end|>\n', "<|assistant|>\n"+item[1]] + '<|end|>\n'])
+		# 			  for item in history_transformer_format])
+
+		# messages = []
+		# for item in history_transformer_format:
+		# 	messages.append({"role": "user", "content": item[0]})
+		# 	if (item[1] != ""):
+		# 		messages.append({"role": "assistant", "content": item[1]})
+		
+		messages = ""
+		for item in history_transformer_format:
+			messages += "<|user|>\n" + item[0] + "<|end|>\n"
+			if (item[1] != ""):
+				messages += "<|assistant|>\n" + item[1] + "<|end|>\n"
+		
+		# messages += "<|assistant|>\n"
+		
+		# messages = "".join(["".join(["<|user|>\n" + item[0] + "<|end|>\n", "<|assistant|>\n" + item[1] + "<|end|>\n"])
+		# 		  for item in history_transformer_format])
+
 		# Original code for the "togethercomputer/RedPajama-INCITE-Chat-3B-v1" model
-		messages = "".join(["".join(["\n<human>:"+item[0], "\n<bot>:"+item[1]])
-				for item in history_transformer_format])
+		# messages = "".join(["".join(["\n<human>:"+item[0], "\n<bot>:"+item[1]])
+		# 		for item in history_transformer_format])
 
 		# My code for the "microsoft/Phi-3-mini-128k-instruct" model
 		# messages = "".join(["".join(["<|user|>\n " + item[0] + "<|end|>\n", "<|assistant|>\n " + item[1] + "<|end|>\n"])
