@@ -2,10 +2,14 @@
 # torch==2.3.1
 # accelerate==0.31.0
 # transformers==4.41.2
-# transformers[sentencepiece] # Installa tutte le dioendenze necessarie per l'uso di transformers
+
 torch
 accelerate
-transformers
+# transformers
 gradio
 flash_attn
+
+transformers[sentencepiece] # Installa tutte le dipendenze necessarie per l'uso dei transformers
+datasets # Installato per gli esempi
+evaluate # Installato per gli esempi
 # safetensors
