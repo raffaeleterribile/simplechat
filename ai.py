@@ -27,21 +27,21 @@ PLACEHOLDER_5_TOKEN = "<|placeholder5|>"
 PLACEHOLDER_6_TOKEN = "<|placeholder6|>"
 
 SPECIAL_TOKENS = {
-	SYSTEM_TOKEN: 32006,
-	ASSISTANT_TOKEN: 32001,
-	USER_TOKEN: 32010,
-	UNKNOWN_TOKEN: 0,
-	BEGIN_OF_SENTENCE_TOKEN: 1,
-	END_OF_SENTENCE_TOKEN: 2,
-	END_TOKEN: 32007,
-	PAD_TOKEN: 32000,
-	END_OF_TEXT_TOKEN: 32000,
-	PLACEHOLDER_1_TOKEN: 32002,
-	PLACEHOLDER_2_TOKEN: 32003,
-	PLACEHOLDER_3_TOKEN: 32004,
-	PLACEHOLDER_4_TOKEN: 32005,
-	PLACEHOLDER_5_TOKEN: 32008,
-	PLACEHOLDER_6_TOKEN: 32009
+	"SYSTEM_TOKEN": 32006,
+	"ASSISTANT_TOKEN": 32001,
+	"USER_TOKEN": 32010,
+	"UNKNOWN_TOKEN": 0,
+	"BEGIN_OF_SENTENCE_TOKEN": 1,
+	"END_OF_SENTENCE_TOKEN": 2,
+	"END_TOKEN": 32007,
+	"PAD_TOKEN": 32000,
+	"END_OF_TEXT_TOKEN": 32000,
+	"PLACEHOLDER_1_TOKEN": 32002,
+	"PLACEHOLDER_2_TOKEN": 32003,
+	"PLACEHOLDER_3_TOKEN": 32004,
+	"PLACEHOLDER_4_TOKEN": 32005,
+	"PLACEHOLDER_5_TOKEN": 32008,
+	"PLACEHOLDER_6_TOKEN": 32009
 }
 
 class StopOnTokens(StoppingCriteria):
@@ -76,8 +76,8 @@ class Generator:
 	def generate(self, message, history):
 		""" Generate a response to a message. """
 		history_transformer_format = history + [[message, ""]]
-		stop = StopOnTokens([32000])
-
+		stop = StopOnTokens([SPECIAL_TOKENS["END_OF_TEXT_TOKEN"]])
+		
      	# "chat_template": "{% for message in messages %}{% if message['role'] == 'system' %}{{'<|system|>\n' + message['content'] + '<|end|>\n'}}{% elif message['role'] == 'user' %}{{'<|user|>\n' + message['content'] + '<|end|>\n'}}{% elif message['role'] == 'assistant' %}{{'<|assistant|>\n' + message['content'] + '<|end|>\n'}}{% endif %}{% endfor %}{% if add_generation_prompt %}{{ '<|assistant|>\n' }}{% else %}{{ eos_token }}{% endif %}"
 
 		# for message in messages:
@@ -88,12 +88,12 @@ class Generator:
 		# 	elif message['role'] == 'assistant':
 		# 		history_transformer_format[-1][1] = '<|assistant|>\n' + message['content'] + '<|end|>\n'
 
-		""" Chat example for the "microsoft/Phi-3-mini-128k-instruct" model
-		 <|system|>
-		You are a helpful assistant.<|end|>
-		<|user|>
-		How to explain Internet for a medieval knight?<|end|>
-		<|assistant|> """
+		# Chat example for the "microsoft/Phi-3-mini-128k-instruct" model
+		# <|system|>
+		# You are a helpful assistant.<|end|>
+		# <|user|>
+		# How to explain Internet for a medieval knight?<|end|>
+		# <|assistant|>
 
 		# My code for the "microsoft/Phi-3-mini-128k-instruct" model
 		# messages = "".join(["".join(["<|user|>\n"+item[0] + '<|end|>\n', "<|assistant|>\n"+item[1]] + '<|end|>\n'])
@@ -110,6 +110,8 @@ class Generator:
 			messages += "<|user|>\n" + item[0] + "<|end|>\n"
 			if (item[1] != ""):
 				messages += "<|assistant|>\n" + item[1] + "<|end|>\n"
+			else:
+				messages += "<|assistant|>\n"
 		
 		# messages += "<|assistant|>\n"
 		
@@ -125,7 +127,8 @@ class Generator:
 		# 		for item in history_transformer_format])
 
 		model_inputs = self.tokenizer([messages], return_tensors="pt") #.to("cuda")
-		streamer = TextIteratorStreamer(self.tokenizer, timeout=STREAMER_TIMEOUT, skip_prompt=True, skip_special_tokens=True)
+		# model_inputs = self.tokenizer.apply_chat_template([messages], tokenize=False, add_generation_prompt=True, return_tensors="pt") #.to("cuda")
+		streamer = TextIteratorStreamer(self.tokenizer, timeout=STREAMER_TIMEOUT, skip_prompt=False, skip_special_tokens=False)
 		generate_kwargs = dict(
 				model_inputs,
 				streamer=streamer,

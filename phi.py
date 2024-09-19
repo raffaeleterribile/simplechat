@@ -1,8 +1,8 @@
 """ Examples with Phi3 Instructions model. """
+import os
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoProcessor, pipeline
 from safetensors.torch import load_file
-import os
 
 MODEL_ID = "microsoft/Phi-3-vision-128k-instruct"
 
@@ -15,7 +15,7 @@ torch.random.manual_seed(0) # Set seed for reproducibility
 messages = [
     {"role": "user", "content": "Who are you?"},
 ]
-pipe = pipeline("text-generation", model=MODEL_ID, torch_dtype="auto", trust_remote_code=True)
+pipe = pipeline("text-generation", model=MODEL_ID, torch_dtype="auto", trust_remote_code=True, _attn_implementation="default")
 result = pipe(messages)
 print("Phi with a pipeline: ", result)
 pipe = None
