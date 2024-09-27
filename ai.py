@@ -103,16 +103,20 @@ class Generator:
 		super().__init__()
 		self.history = []
 
-		self.tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
+		self.tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True, 
+												 use_chat_template=True, add_generation_prompt=True)
 
 		# With torch_dtype="auto", the model will load much faster
+		# Notes: If you want to use flash attention, call AutoModelForCausalLM.from_pretrained() with attn_implementation="flash_attention_2"
 		self.model = AutoModelForCausalLM.from_pretrained(MODEL_ID,
 													# device_map="cuda",
 													torch_dtype="auto",
 													trust_remote_code=True)
 		# self.model = self.model.to('cuda:0')
 
-		self.pipeline = pipeline("text-generation", model=MODEL_ID, torch_dtype="auto", trust_remote_code=True)
+		self.pipeline = pipeline("text-generation",
+			tokenizer=self.tokenizer, model=self.model,
+			torch_dtype="auto", trust_remote_code=True)
 
 	def generate(self, chat, history):
 		""" Generate a response to a message. """
@@ -140,9 +144,17 @@ class Generator:
 
 		# return self.tokenizer.decode(model_outputs[0], skip_special_tokens=True)
 
-		return self.pipeline(messages, max_length=1024, do_sample=True, 
-					   top_p=0.95, top_k=1000, temperature=1.0, num_beams=1, 
+		messages = [
+			{"role": "system", "content": "You are a helpful AI assistant."},
+			{"role": "user", "content": "Can you provide ways to eat combinations of bananas and dragonfruits?"},
+			{"role": "assistant", "content": "Sure! Here are some ways to eat bananas and dragonfruits together: 1. Banana and dragonfruit smoothie: Blend bananas and dragonfruits together with some milk and honey. 2. Banana and dragonfruit salad: Mix sliced bananas and dragonfruits together with some lemon juice and honey."},
+			{"role": "user", "content": "What about solving an 2x + 3 = 7 equation?"},
+		]
+
+		result = self.pipeline(messages, max_length=1024, do_sample=True, 
+					   top_p=0.95, top_k=1000, temperature=1.0, num_beams=1,
 					   stopping_criteria=StoppingCriteriaList([stop]))
+		return result[0]["generated_text"][-1]["content"]
 
 		# Original code for the "togethercomputer/RedPajama-INCITE-Chat-3B-v1" model
 		# messages = "".join(["".join(["\n<human>:"+item[0], "\n<bot>:"+item[1]])
@@ -163,7 +175,7 @@ class Generator:
 		# 	)
 		# thread = Thread(target=self.model.generate, kwargs=generate_kwargs)
 		# thread.start()
-# 
+
 		# partial_message = ""
 		# for new_token in streamer:
 		# 	if new_token != '<':
