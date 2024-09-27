@@ -1,12 +1,13 @@
+""" Examples for the pipeline API. """
 from transformers import pipeline
 
 # Classification
-classifier = pipeline("sentiment-analysis", model="microsoft/Phi-3-mini-128k-instruct", torch_dtype="auto", trust_remote_code=True)
-result = classifier("I've been waiting for modela HuggingFace course my whole life.")
+classifier = pipeline("sentiment-analysis", model="microsoft/Phi-3-mini-128k-instruct", torch_dtype="auto", trust_remote_code=False)
+result = classifier("I've been waiting for model HuggingFace course my whole life.")
 print("Classification: ", result)
 
 # Multiple classification
-classifier = pipeline("sentiment-analysis", model="microsoft/Phi-3-mini-128k-instruct", torch_dtype="auto", trust_remote_code=True)
+classifier = pipeline("sentiment-analysis", model="microsoft/Phi-3-mini-128k-instruct", torch_dtype="auto", trust_remote_code=False)
 result = classifier(
     ["I've been waiting for a HuggingFace course my whole life.", "I hate this so much!"]
 )
@@ -25,6 +26,7 @@ classifier = None
 generator = pipeline("text-generation", model="microsoft/Phi-3-mini-128k-instruct", torch_dtype="auto", trust_remote_code=True)
 result = generator("In this course, we will teach you how to")
 print("Text Generation: ", result)
+print("Generated Text: ", result[0]["generated_text"])
 generator = None
 
 # Text generation with parameters
