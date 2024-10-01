@@ -103,16 +103,24 @@ class Generator:
 		super().__init__()
 		self.history = []
 
+		# Ottieni il riferimento al dispositivo
+		device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+		device_map = "cuda" if torch.cuda.is_available() else "cpu"
+
+		# Stampa il dispositivo per conferma
+		print(f"Using device: {device}")
+
 		self.tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True, 
 												 use_chat_template=True, add_generation_prompt=True)
 
 		# With torch_dtype="auto", the model will load much faster
 		# Notes: If you want to use flash attention, call AutoModelForCausalLM.from_pretrained() with attn_implementation="flash_attention_2"
 		self.model = AutoModelForCausalLM.from_pretrained(MODEL_ID,
-													# device_map="cuda",
+													device_map=device_map,
 													torch_dtype="auto",
 													trust_remote_code=True)
 		# self.model = self.model.to('cuda:0')
+		self.model = self.model.to(device)
 
 		self.pipeline = pipeline("text-generation",
 			tokenizer=self.tokenizer, model=self.model,
@@ -123,16 +131,13 @@ class Generator:
 		history_transformer_format = history + [[chat, ""]]
 		stop = StopOnTokens([SpecialTokens.END_OF_SENTENCE_TOKEN()]) # 32000 - END_OF_TEXT_TOKEN
 
-		# messages = []
-		# for item in history_transformer_format:
-		# 	messages.append({"role": "user", "content": item[0]})
-		# 	if item[1] != "":
-		# 		messages.append({"role": "assistant", "content": item[1]})
+		messages = [{"role": "system", "content": "You are a helpful AI assistant."}]
+		for item in history_transformer_format:
+			messages.append({"role": "user", "content": item[0]})
+			if item[1] != "":
+				messages.append({"role": "assistant", "content": item[1]})
 
-		# chat = self.tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True) #.to("cuda")
-
-		messages = "".join(["".join([item[0] + "\n", "" if item[1] == "" else item[1] + "\n"])
-				for item in history_transformer_format])
+		# messages = self.tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True) #.to("cuda")
 
 		# model_inputs = self.tokenizer([messages], padding=True, truncation=True, return_tensors="pt") #.to("cuda")
 
@@ -143,13 +148,6 @@ class Generator:
 		# model_outputs = self.model(**model_inputs)
 
 		# return self.tokenizer.decode(model_outputs[0], skip_special_tokens=True)
-
-		messages = [
-			{"role": "system", "content": "You are a helpful AI assistant."},
-			{"role": "user", "content": "Can you provide ways to eat combinations of bananas and dragonfruits?"},
-			{"role": "assistant", "content": "Sure! Here are some ways to eat bananas and dragonfruits together: 1. Banana and dragonfruit smoothie: Blend bananas and dragonfruits together with some milk and honey. 2. Banana and dragonfruit salad: Mix sliced bananas and dragonfruits together with some lemon juice and honey."},
-			{"role": "user", "content": "What about solving an 2x + 3 = 7 equation?"},
-		]
 
 		result = self.pipeline(messages, max_length=1024, do_sample=True, 
 					   top_p=0.95, top_k=1000, temperature=1.0, num_beams=1,
