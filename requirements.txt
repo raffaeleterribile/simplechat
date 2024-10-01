@@ -13,3 +13,6 @@ transformers[sentencepiece] # Installa tutte le dipendenze necessarie per l'uso 
 datasets # Installato per gli esempi
 evaluate # Installato per gli esempi
 # safetensors
+
+gguf # Installato per gli esempi
+onnxruntime # Installato per gli esempi
