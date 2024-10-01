@@ -10,7 +10,8 @@ MODEL_ID : Final[str] = "microsoft/Phi-3-mini-128k-instruct"
 STREAMER_TIMEOUT : Final[float] = 100.0 # seconds. The default was 10. but, with 10., the app crashes
 # MAX_OUTPUT_LENGTH : Final[int] = 4096 # The default was 1024
 
-""" SYSTEM_TOKEN = "<|system|>"
+""" SPECIAL TOKENS
+SYSTEM_TOKEN = "<|system|>"
 ASSISTANT_TOKEN = "<|assistant|>"
 USER_TOKEN = "<|user|>"
 UNKNOWN_TOKEN = "<unk>"
