@@ -127,9 +127,9 @@ class Generator:
 			tokenizer=self.tokenizer, model=self.model,
 			torch_dtype="auto", trust_remote_code=True)
 
-	def generate(self, chat, history):
+	def generate(self, message, history):
 		""" Generate a response to a message. """
-		history_transformer_format = history + [[chat, ""]]
+		history_transformer_format = history + [[message, ""]]
 		stop = StopOnTokens([SpecialTokens.END_OF_SENTENCE_TOKEN()]) # 32000 - END_OF_TEXT_TOKEN
 
 		messages = [{"role": "system", "content": "You are a helpful AI assistant."}]
