@@ -16,3 +16,6 @@ evaluate # Installato per gli esempi
 
 gguf # Installato per gli esempi
 onnxruntime # Installato per gli esempi
+
+fastapi #Installato per creare gli endpoint
+pydantic #Installato per definire i modelli di input e output degli endpoint
