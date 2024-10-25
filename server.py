@@ -19,17 +19,19 @@ class Message(BaseModel):
 	message: str
 
 @app.post("/chat/")
-def chat(message: Message) -> Message:
+def chat(request: Message) -> Message:
 	""" Genera una risposta ad un messaggio """
-	response_iterator = generator.generate(message.message, history)
+	text_iterator = generator.generate(request.message, history)
 
-	response = ""
-	for partial_response in response_iterator:
-		response = partial_response
+	text = ""
+	for partial_text in text_iterator:
+		text = partial_text
 
-	history.append({"role": "user", "content": message.message})
-	history.append({"role": "assistant", "content": response})
-	return Message(message=response)
+	history.append({"role": "user", "content": request.message})
+	history.append({"role": "assistant", "content": text})
+
+	response = Message(message=text)
+	return response
 
 if __name__ == "__main__":
 	uvicorn.run(app, host="127.0.0.1", port=8000)
