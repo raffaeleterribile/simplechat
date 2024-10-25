@@ -5,5 +5,5 @@ from ai import Generator
 
 generator = Generator()
 
-demo = gr.ChatInterface(generator.generate)
+demo = gr.ChatInterface(generator.generate, type="messages")
 demo.launch()

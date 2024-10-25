@@ -2,6 +2,7 @@
 from enum import Enum
 from threading import Thread
 from typing import Final
+import string
 import torch
 from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer, StoppingCriteria, StoppingCriteriaList, TextIteratorStreamer
 
@@ -63,23 +64,23 @@ class SpecialTokens(Enum):
 	PLACEHOLDER_5_TOKEN = "<|placeholder5|>"
 	PLACEHOLDER_6_TOKEN = "<|placeholder6|>"
 
-	def __call__(self) -> int:
+	def __call__(self) -> torch.LongTensor:
 		special_tokens_ids = {
-			SpecialTokens.SYSTEM_TOKEN: 32006,
-			SpecialTokens.ASSISTANT_TOKEN: 32001,
-			SpecialTokens.USER_TOKEN: 32010,
-			SpecialTokens.UNKNOWN_TOKEN: 0,
-			SpecialTokens.BEGIN_OF_SENTENCE_TOKEN: 1,
-			SpecialTokens.END_OF_SENTENCE_TOKEN: 2,
-			SpecialTokens.END_TOKEN: 32007,
-			SpecialTokens.PAD_TOKEN: 32000,
-			SpecialTokens.END_OF_TEXT_TOKEN: 32000,
-			SpecialTokens.PLACEHOLDER_1_TOKEN: 32002,
-			SpecialTokens.PLACEHOLDER_2_TOKEN: 32003,
-			SpecialTokens.PLACEHOLDER_3_TOKEN: 32004,
-			SpecialTokens.PLACEHOLDER_4_TOKEN: 32005,
-			SpecialTokens.PLACEHOLDER_5_TOKEN: 32008,
-			SpecialTokens.PLACEHOLDER_6_TOKEN: 32009
+			SpecialTokens.SYSTEM_TOKEN: torch.LongTensor(32006),
+			SpecialTokens.ASSISTANT_TOKEN: torch.LongTensor(32001),
+			SpecialTokens.USER_TOKEN: torch.LongTensor(32010),
+			SpecialTokens.UNKNOWN_TOKEN: torch.LongTensor(0),
+			SpecialTokens.BEGIN_OF_SENTENCE_TOKEN: torch.LongTensor(1),
+			SpecialTokens.END_OF_SENTENCE_TOKEN: torch.LongTensor(2),
+			SpecialTokens.END_TOKEN: torch.LongTensor(32007),
+			SpecialTokens.PAD_TOKEN: torch.LongTensor(32000),
+			SpecialTokens.END_OF_TEXT_TOKEN: torch.LongTensor(32000),
+			SpecialTokens.PLACEHOLDER_1_TOKEN: torch.LongTensor(32002),
+			SpecialTokens.PLACEHOLDER_2_TOKEN: torch.LongTensor(32003),
+			SpecialTokens.PLACEHOLDER_3_TOKEN: torch.LongTensor(32004),
+			SpecialTokens.PLACEHOLDER_4_TOKEN: torch.LongTensor(32005),
+			SpecialTokens.PLACEHOLDER_5_TOKEN: torch.LongTensor(32008),
+			SpecialTokens.PLACEHOLDER_6_TOKEN: torch.LongTensor(32009)
 		}
 
 		return special_tokens_ids[self]
@@ -105,13 +106,13 @@ class Generator:
 		self.history = []
 
 		# Ottieni il riferimento al dispositivo
-		device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+		self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 		device_map = "cuda" if torch.cuda.is_available() else "cpu"
 
 		# Stampa il dispositivo per conferma
-		print(f"Using device: {device}")
+		print(f"Using device: {self.device}")
 
-		self.tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True, 
+		self.tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True,
 												 use_chat_template=True, add_generation_prompt=True)
 
 		# With torch_dtype="auto", the model will load much faster
@@ -121,7 +122,7 @@ class Generator:
 													torch_dtype="auto",
 													trust_remote_code=True)
 		# self.model = self.model.to('cuda:0')
-		self.model = self.model.to(device)
+		self.model = self.model.to(self.device)
 
 		self.pipeline = pipeline("text-generation",
 			tokenizer=self.tokenizer, model=self.model,
@@ -129,54 +130,59 @@ class Generator:
 
 	def generate(self, message, history):
 		""" Generate a response to a message. """
-		history_transformer_format = history + [[message, ""]]
-		stop = StopOnTokens([SpecialTokens.END_OF_SENTENCE_TOKEN()]) # 32000 - END_OF_TEXT_TOKEN
+		message = self.clean_text(message)
 
 		messages = [{"role": "system", "content": "You are a helpful AI assistant."}]
-		for item in history_transformer_format:
-			messages.append({"role": "user", "content": item[0]})
-			if item[1] != "":
-				messages.append({"role": "assistant", "content": item[1]})
+		messages.extend(history)
+		messages.append({"role": "user", "content": message})
 
-		# messages = self.tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True) #.to("cuda")
+		stop = StopOnTokens(SpecialTokens.END_TOKEN()) # 32000 - END_OF_TEXT_TOKEN
 
-		# model_inputs = self.tokenizer([messages], padding=True, truncation=True, return_tensors="pt") #.to("cuda")
+		messages = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
-		# model_outputs = self.model.generate(model_inputs, max_new_tokens=1024, do_sample=True,
-		# 					   top_p=0.95, top_k=1000, temperature=1.0, num_beams=1,
-		# 					   stopping_criteria=StoppingCriteriaList([stop]))
+		model_inputs = self.tokenizer([messages], return_tensors="pt").to(self.device)
 
-		# model_outputs = self.model(**model_inputs)
+		streamer = TextIteratorStreamer(self.tokenizer, timeout=STREAMER_TIMEOUT, skip_prompt=True, skip_special_tokens=False)
+		generate_kwargs = dict(
+				model_inputs,
+				streamer=streamer,
+				max_new_tokens=1024,
+				do_sample=True,
+				top_p=0.95,
+				top_k=1000,
+				temperature=1.0,
+				num_beams=1,
+				stopping_criteria=StoppingCriteriaList([stop])
+			)
+		thread = Thread(target=self.model.generate, kwargs=generate_kwargs)
+		thread.start()
 
-		# return self.tokenizer.decode(model_outputs[0], skip_special_tokens=True)
+		partial_message = ""
+		for generated_token in streamer:
+			new_token = self.clean_text(generated_token)
 
-		result = self.pipeline(messages, max_length=1024, do_sample=True, 
-					   top_p=0.95, top_k=1000, temperature=1.0, num_beams=1,
-					   stopping_criteria=StoppingCriteriaList([stop]))
-		return result[0]["generated_text"][-1]["content"]
+			partial_message += new_token
+			print(f"generated_token: \"{generated_token}\", new_token: \"{new_token}\", partial_message: \"{partial_message}\"")
+			yield partial_message
 
-		# Original code for the "togethercomputer/RedPajama-INCITE-Chat-3B-v1" model
-		# messages = "".join(["".join(["\n<human>:"+item[0], "\n<bot>:"+item[1]])
-		# 		for item in history_transformer_format])
+	def clean_text(self, original_text):
+		""" Clean the text by removing special tokens and extra spaces. """
+		if original_text is None:
+			return ""
 
-		# model_inputs = self.tokenizer([messages], return_tensors="pt") #.to("cuda")
-		# streamer = TextIteratorStreamer(self.tokenizer, timeout=STREAMER_TIMEOUT, skip_prompt=False, skip_special_tokens=False)
-		# generate_kwargs = dict(
-		# 		model_inputs,
-		# 		streamer=streamer,
-		# 		max_new_tokens=1024,
-		# 		do_sample=True,
-		# 		top_p=0.95,
-		# 		top_k=1000,
-		# 		temperature=1.0,
-		# 		num_beams=1,
-		# 		stopping_criteria=StoppingCriteriaList([stop])
-		# 	)
-		# thread = Thread(target=self.model.generate, kwargs=generate_kwargs)
-		# thread.start()
+		cleaned_text = original_text
+		for special_token in SpecialTokens:
+			cleaned_text = cleaned_text.replace(special_token.value, "")
 
-		# partial_message = ""
-		# for new_token in streamer:
-		# 	if new_token != '<':
-		# 		partial_message += new_token
-		# 		yield partial_message
+		# Crea un set di caratteri stampabili
+		printable = set(string.printable)
+
+		# Filtra i caratteri non stampabili
+		cleaned_text = ''.join(filter(lambda char: char in printable, cleaned_text))
+
+		cleaned_text = cleaned_text.replace("\n", " ").replace("\r", " ")
+
+		while "  " in cleaned_text:
+			cleaned_text = cleaned_text.replace("  ", " ")
+
+		return cleaned_text
