@@ -12,3 +12,6 @@ pip install flash-attn --no-build-isolation
 
 Esempio di chiamata al server FastAPI con CURL:
 curl -X POST http://127.0.0.1:8000/chat/ -H "Content-Type: application/json" -d '{"message": "MESSAGGIO"}'
+
+Comando per generare il server RPC
+python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. simple_chat.proto

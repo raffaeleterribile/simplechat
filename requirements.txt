@@ -17,5 +17,9 @@ evaluate # Installato per gli esempi
 gguf # Installato per gli esempi
 onnxruntime # Installato per gli esempi
 
-fastapi #Installato per creare gli endpoint
-pydantic #Installato per definire i modelli di input e output degli endpoint
+fastapi # Installato per creare gli endpoint
+pydantic # Installato per definire i modelli di input e output degli endpoint
+
+grpcio # Installato per creare il server gRPC
+grpcio-tools # Installato per creare il server gRPC (tool di supporto)
+protobuf # Installato per definire i modelli di input e output del server gRPC

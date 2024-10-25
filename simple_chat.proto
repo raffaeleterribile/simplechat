@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package simple_chat;
+
+// Definizione del servizio ChatService
+service ChatService {
+  // RPC per inviare un messaggio sincrono
+  rpc send_message (ChatMessage) returns (ChatMessage);
+
+  rpc send_stream_message (ChatMessage) returns (stream ChatMessage);
+}
+
+// Messaggio di chat
+message ChatMessage {
+  string message = 1;
+}
