@@ -7,7 +7,7 @@ torch
 accelerate
 # transformers
 gradio
-flash_attn
+# flash_attn
 
 transformers[sentencepiece] # Installa tutte le dipendenze necessarie per l'uso dei transformers
 datasets # Installato per gli esempi

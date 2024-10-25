@@ -1,6 +1,6 @@
 PRE REQ CUDA Drivers version 12.4.0 installation
 
-conda create --prefix C:\Users\Raffaele\.conda\envs\simplechat python pip
+conda create --prefix C:\Users\Raffaele\.conda\envs\simplechat python=3.10 pip
 conda activate simplechat
 conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvidia
 
