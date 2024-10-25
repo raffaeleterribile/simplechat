@@ -6,7 +6,7 @@ conda install pytorch torchvision torchaudio pytorch-cuda=12.4 -c pytorch -c nvi
 
 pip install -r requirements.txt
 
-Non usati
+Non usati (non ricordo perché li ho aggiunti)
 pip install ninja packaging
 pip install flash-attn --no-build-isolation
 
