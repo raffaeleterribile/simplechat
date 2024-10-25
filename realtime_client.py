@@ -21,9 +21,9 @@ def run():
 		request = simple_chat_pb2.ChatMessage(message=user_message)
 
 		# Invio del messaggio al server e ricezione della risposta
-		# response = stub.send_message(request)
+		response = stub.send_message(request)
 
-		# print(f"Sync Server response: {response.message}")
+		print(f"Sync Server response: {response.message}")
 
 		# Invio del messaggio al server e ricezione della risposta in modalità streaming
 		response_iterator = stub.send_stream_message(request)
