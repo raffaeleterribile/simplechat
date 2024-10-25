@@ -7,6 +7,7 @@ import simple_chat_pb2_grpc
 from ai import Generator
 
 class ChatService(simple_chat_pb2_grpc.ChatServiceServicer):
+	""" Implementazione del servizio gRPC """
 	def __init__(self):
 		super().__init__()
 		self.generator = Generator()

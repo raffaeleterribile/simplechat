@@ -5,6 +5,7 @@ import simple_chat_pb2_grpc
 import sys
 
 def run():
+	""" Invia un messaggio al server gRPC """
 	# Verifica se è stato passato un parametro di input
 	if len(sys.argv) < 2:
 		print("Usage: python realtime_client.py <message>")
