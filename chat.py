@@ -1,4 +1,4 @@
-""" Demonstrates a simple chat interface using the RedPajama-INCITE-Chat-3B-v1 model. """
+""" Demonstrates a simple chat interface. """
 
 import gradio as gr
 from ai import Generator
