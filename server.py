@@ -11,15 +11,24 @@ history = []
 
 @app.get("/")
 def root():
+	""" Home page"""
 	return "Hello World!"
 
 class Message(BaseModel):
+	""" Modello per il messaggio """
 	message: str
 
 @app.post("/chat/")
 def chat(message: Message) -> Message:
-	response = generator.generate(message.message, history)
-	history.append([message, response])
+	""" Genera una risposta ad un messaggio """
+	response_iterator = generator.generate(message.message, history)
+
+	response = ""
+	for partial_response in response_iterator:
+		response = partial_response
+
+	history.append({"role": "user", "content": message.message})
+	history.append({"role": "assistant", "content": response})
 	return Message(message=response)
 
 if __name__ == "__main__":

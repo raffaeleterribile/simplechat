@@ -2,7 +2,7 @@
 from enum import Enum
 from threading import Thread
 from typing import Final
-import string
+import re
 import torch
 from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer, StoppingCriteria, StoppingCriteriaList, TextIteratorStreamer
 
@@ -133,6 +133,10 @@ class Generator:
 		message = self.clean_text(message)
 
 		messages = [{"role": "system", "content": "You are a helpful AI assistant."}]
+
+		for history_message in history:
+			history_message['content'] = self.clean_text(history_message['content'])
+
 		messages.extend(history)
 		messages.append({"role": "user", "content": message})
 
@@ -162,7 +166,7 @@ class Generator:
 			new_token = self.clean_text(generated_token)
 
 			partial_message += new_token
-			print(f"generated_token: \"{generated_token}\", new_token: \"{new_token}\", partial_message: \"{partial_message}\"")
+			print(f"generated_token:\n\t\"{generated_token}\"\nnew_token:\n\t\"{new_token}\"\npartial_message:\n\t\"{partial_message}\"")
 			yield partial_message
 
 	def clean_text(self, original_text):
@@ -170,17 +174,16 @@ class Generator:
 		if original_text is None:
 			return ""
 
+		# Rimuove i token speciali
 		cleaned_text = original_text
 		for special_token in SpecialTokens:
 			cleaned_text = cleaned_text.replace(special_token.value, "")
 
-		# Crea un set di caratteri stampabili
-		printable = set(string.printable)
+		# Rimuove i caratteri di controllo
+		cleaned_text = re.sub(r'[\x00-\x1F\x7F]', '', cleaned_text)
 
-		# Filtra i caratteri non stampabili
-		cleaned_text = ''.join(filter(lambda char: char in printable, cleaned_text))
-
-		cleaned_text = cleaned_text.replace("\n", " ").replace("\r", " ")
+		# Sostituisce i caratteri di tipo whitespace con uno spazio
+		cleaned_text = re.sub(r'\s', ' ', cleaned_text)
 
 		while "  " in cleaned_text:
 			cleaned_text = cleaned_text.replace("  ", " ")
